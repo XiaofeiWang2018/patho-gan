@@ -1,2 +1,3 @@
 # patho-gan
-Code and paper link of 'Pathology-aware network visualization and its application in glaucoma image synthesis'
+Code TBD soon!
+Paper link of 'Pathology-aware network visualization and its application in glaucoma image synthesis'
