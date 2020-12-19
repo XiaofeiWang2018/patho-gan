@@ -1,0 +1,4 @@
+model_checkpoint_path: "Alex_fc256.ckpt-30001"
+all_model_checkpoint_paths: "Alex_fc256.ckpt-10001"
+all_model_checkpoint_paths: "Alex_fc256.ckpt-20001"
+all_model_checkpoint_paths: "Alex_fc256.ckpt-30001"
