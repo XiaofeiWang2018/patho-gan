@@ -19,7 +19,7 @@ sysstr = "Linux"
 Z_DIM = 400
 LR=0.0002
 LR_str='_lr2-4'
-dataset='OURS_350'
+dataset='OURS'
 img_H=512
 save_size=[1, 1]
 
@@ -255,7 +255,6 @@ def main():
     g_loss_tv = get_tv_loss(G)
     g_loss = L_ad * g_loss_ad + L_content * g_loss_style + L_tv * g_loss_tv
 
-    # 生成器和判别器要更新的变量，用于 tf.train.Optimizer 的 var_list
     t_vars = tf.trainable_variables()
     d_vars = [var for var in t_vars if 'd_' in var.name]
     g_vars = [var for var in t_vars if 'g_' in var.name]
@@ -274,7 +273,6 @@ def main():
     sample_z = np.random.uniform(0, 1, size=(BATCH_SIZE, Z_DIM))
     _, batch_vessel_test,_ = dataloader_test.get_batch()
     count = 0
-    # 循环 25 个 epoch 训练网络
     for epoch in range(2400):
         for idx in range(num_batches):
             batch_images, batch_vessel ,img_name= dataloader.get_batch()
@@ -303,14 +301,12 @@ def main():
                 print(" RimLoss_content uniform L1=%.2f L2=%.2f L3=%.2f Epoch: [%2d] [%4d/%4d] d_loss: %.6f, g_loss: %.6f" \
                       % (L_ad,L_content,L_tv,epoch, idx, num_batches, errD_fake + errD_real, errG))
 
-            # 训练过程中，用采样器采样，并且保存采样的图片
             if count % int(3500/BATCH_SIZE)== 0:
                 sample = sess.run(G, feed_dict={z: sample_z,vessel:batch_vessel_test})
                 scipy.misc.imsave(SAVE_PATH + '/' + 'test_%d_epoch_%d_iter.jpg' % (epoch, idx), sample[0])
                 print('save image')
 
 
-            # # 每过 500 次迭代，保存一次模型
             if count % int(35000/BATCH_SIZE) == 0:
                 saver2.save(sess, 'ckpt_gan/RimLoss_content_uniform_Lad_' + str(L_ad) + '_Lst_'+ str(L_content)+ '_Ltv_'+ str(L_tv) +'.ckpt', global_step=count + 1)
 
