@@ -1,0 +1,2 @@
+model_checkpoint_path: "ckpt_gan/RimLoss_style_Lad_1_Lst_1000.0_Ltv_10_normal12.ckpt-35000.index"
+all_model_checkpoint_paths: "RimLoss_content_Lad_1_Lst_1_Ltv_0.ckpt-455001"
