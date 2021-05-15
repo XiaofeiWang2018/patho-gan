@@ -297,18 +297,7 @@ def main():
             errD_real = d_loss_real.eval({images: batch_images,vessel:batch_vessel})
             errG = g_loss.eval(feed_dict_g)
 
-            if count % int(350/BATCH_SIZE) == 0:
-                print(" RimLoss_content uniform L1=%.2f L2=%.2f L3=%.2f Epoch: [%2d] [%4d/%4d] d_loss: %.6f, g_loss: %.6f" \
-                      % (L_ad,L_content,L_tv,epoch, idx, num_batches, errD_fake + errD_real, errG))
-
-            if count % int(3500/BATCH_SIZE)== 0:
-                sample = sess.run(G, feed_dict={z: sample_z,vessel:batch_vessel_test})
-                scipy.misc.imsave(SAVE_PATH + '/' + 'test_%d_epoch_%d_iter.jpg' % (epoch, idx), sample[0])
-                print('save image')
-
-
-            if count % int(35000/BATCH_SIZE) == 0:
-                saver2.save(sess, 'ckpt_gan/RimLoss_content_uniform_Lad_' + str(L_ad) + '_Lst_'+ str(L_content)+ '_Ltv_'+ str(L_tv) +'.ckpt', global_step=count + 1)
+           
 
             count = count + 1
 
