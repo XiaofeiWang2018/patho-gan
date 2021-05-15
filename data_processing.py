@@ -86,8 +86,8 @@ class DataLoader_vessel(object):
         self.input_size = input_size
         random.seed(20190307)
         self.path = path
-        self.path_to_image = 'img_data/OURS_138/image/'
-        self.path_to_vessel = 'img_data/OURS_138/vessel/'
+        self.path_to_image = 'img_data/OURS/image/'
+        self.path_to_vessel = 'img_data/OURS/vessel/'
         self.batch_size = batch_size
         self.MEAN_VALUE = np.array([127.11, 77.02, 50.64])
         self.MEAN_VALUE = np.reshape(np.tile(self.MEAN_VALUE, (input_size[0], input_size[1])),
@@ -121,10 +121,7 @@ class DataLoader_vessel(object):
             if (self.sysstr == "Windows"):
                 full_img_path = self.path_to_image + curr_file_image
                 full_vessel_path = self.path_to_vessel + curr_file_vessel
-            else:
-
-                full_img_path = 'img_data/OURS_138/image/' + curr_file_image
-                full_vessel_path = 'img_data/OURS_138/vessel/' + curr_file_vessel
+           
 
             self.cursor += 1
 
