@@ -121,7 +121,10 @@ class DataLoader_vessel(object):
             if (self.sysstr == "Windows"):
                 full_img_path = self.path_to_image + curr_file_image
                 full_vessel_path = self.path_to_vessel + curr_file_vessel
-           
+            else:
+
+                full_img_path = 'img_data/OURS/image/' + curr_file_image
+                full_vessel_path = 'img_data/OURS/vessel/' + curr_file_vessel
 
             self.cursor += 1
 
