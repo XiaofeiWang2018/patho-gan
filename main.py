@@ -3,42 +3,48 @@ import numpy as np
 import scipy.misc
 from alexnet import *
 from matplotlib import pyplot as plt
-from skimage import io,transform
+from skimage import io, transform
 from scipy.misc import imread, imresize
 from data_processing import DataLoader_vessel as DataLoader
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "3"
-L_ad=1
-L_content=1
-L_tv=0
-mode='RimLoss/content'
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+L_ad = 1
+L_content = 1
+L_tv = 0
+mode = 'Ours'
 BATCH_SIZE = 2
-
 
 sysstr = "Linux"
 Z_DIM = 400
-LR=0.0002
-LR_str='_lr2-4'
-dataset='OURS'
-img_H=512
-save_size=[1, 1]
+LR = 0.0002
+LR_str = '_lr2-4'
+dataset = 'OURS'
+img_H = 512
+save_size = [1, 1]
 
-if not os.path.isdir('result/'+dataset+'/'+mode+'/Lad_'+ str(L_ad) + '_Lst_'+ str(L_content)+ '_Ltv_'+ str(L_tv)+'_uniform'):
-    os.mkdir('result/'+dataset+'/'+mode+'/Lad_'+ str(L_ad) + '_Lst_'+ str(L_content)+ '_Ltv_'+ str(L_tv)+'_uniform')
-SAVE_PATH=('result/'+dataset+'/'+mode+'/Lad_'+ str(L_ad) + '_Lst_'+ str(L_content)+ '_Ltv_'+ str(L_tv)+'_uniform')
+if not os.path.isdir('result/' + dataset + '/' + mode + '/Lad_' + str(L_ad) + '_Lst_' + str(L_content) + '_Ltv_' + str(
+        L_tv) + '_uniform'):
+    os.mkdir('result/' + dataset + '/' + mode + '/Lad_' + str(L_ad) + '_Lst_' + str(L_content) + '_Ltv_' + str(
+        L_tv) + '_uniform')
+SAVE_PATH = ('result/' + dataset + '/' + mode + '/Lad_' + str(L_ad) + '_Lst_' + str(L_content) + '_Ltv_' + str(
+    L_tv) + '_uniform')
 tf_config = tf.ConfigProto()
 tf_config.gpu_options.allow_growth = True
-def bp(loss_label, a, g,sess):
+
+
+def bp(loss_label, a, g, sess):
     with g.as_default():
         with g.gradient_override_map({'Relu': 'bpRelu'}):
             grads = tf.gradients(loss_label, a)[0]
     return grads
+
 
 def lrelu(x, leak=0.2, name='lrelu'):
     with tf.variable_scope(name):
         f1 = 0.5 * (1 + leak)
         f2 = 0.5 * (1 - leak)
         return f1 * x + f2 * abs(x)
+
 
 def save_images(images, size, path):
     """
@@ -66,14 +72,18 @@ def save_images(images, size, path):
     # 保存画布
     return scipy.misc.imsave(path, merge_img)
 
+
 def remove_all_file(path):
     if os.path.isdir(path):
         for i in os.listdir(path):
             path_file = os.path.join(path, i)
             os.remove(path_file)
 
+
 initializer = tf.truncated_normal_initializer(stddev=0.02)
 bias_initializer = tf.constant_initializer(0.0)
+
+
 def discriminator(image, reuse=False):
     n = 32
     bn = slim.batch_norm
@@ -103,8 +113,8 @@ def discriminator(image, reuse=False):
         d_out = tf.nn.sigmoid(d_out_logits)
     return d_out, d_out_logits
 
-def generator(image, z,n = 64,is_train=True):
 
+def generator(image, z, n=64, is_train=True):
     with tf.name_scope("generator"):
         # original
         e1 = slim.conv2d(image, n, [4, 4], 2, activation_fn=lrelu, scope='g_e1_conv',
@@ -118,15 +128,16 @@ def generator(image, z,n = 64,is_train=True):
                          scope='g_e3_conv',
                          weights_initializer=initializer)
         # 64
-        e4 = slim.conv2d(lrelu(e3), 8 * n, [4, 4], 2, normalizer_fn=slim.batch_norm , activation_fn=None,
+        e4 = slim.conv2d(lrelu(e3), 8 * n, [4, 4], 2, normalizer_fn=slim.batch_norm, activation_fn=None,
                          scope='g_e4_conv',
                          weights_initializer=initializer)
         # 32
-        e5 = slim.conv2d(lrelu(e4), 8 * n, [4, 4], 2, normalizer_fn=slim.batch_norm , activation_fn=None,
+        e5 = slim.conv2d(lrelu(e4), 8 * n, [4, 4], 2, normalizer_fn=slim.batch_norm, activation_fn=None,
                          scope='g_e5_conv',
                          weights_initializer=initializer)
         # # 16
-        e6 = slim.conv2d(lrelu(e5), 8*n, [4, 4], 2, normalizer_fn=slim.batch_norm, activation_fn=None, scope='g_e6_conv',
+        e6 = slim.conv2d(lrelu(e5), 8 * n, [4, 4], 2, normalizer_fn=slim.batch_norm, activation_fn=None,
+                         scope='g_e6_conv',
                          weights_initializer=initializer)
 
         zP = slim.fully_connected(z, 8 * 8 * n, normalizer_fn=None, activation_fn=lrelu, scope='g_project',
@@ -138,23 +149,23 @@ def generator(image, z,n = 64,is_train=True):
         # 8
         gen1 = tf.concat([zCon, e6], 3)
 
-        gen2 = slim.conv2d_transpose(lrelu(gen1), 8 * n, [4, 4], 2, normalizer_fn=slim.batch_norm , activation_fn=None,
+        gen2 = slim.conv2d_transpose(lrelu(gen1), 8 * n, [4, 4], 2, normalizer_fn=slim.batch_norm, activation_fn=None,
                                      scope='g_dconv2', weights_initializer=initializer)
         # 16
         gen2 = tf.concat([gen2, e5], 3)
 
-        gen3 = slim.conv2d_transpose(lrelu(gen2), 4 * n, [4, 4], 2, normalizer_fn=slim.batch_norm , activation_fn=None,
+        gen3 = slim.conv2d_transpose(lrelu(gen2), 4 * n, [4, 4], 2, normalizer_fn=slim.batch_norm, activation_fn=None,
                                      scope='g_dconv3', weights_initializer=initializer)
         gen3 = tf.concat([gen3, e4], 3)
 
         # 32
-        gen6 = slim.conv2d_transpose(tf.nn.relu(gen3), 2 * n, [4, 4], 2, normalizer_fn=slim.batch_norm ,
+        gen6 = slim.conv2d_transpose(tf.nn.relu(gen3), 2 * n, [4, 4], 2, normalizer_fn=slim.batch_norm,
                                      activation_fn=None,
                                      scope='g_dconv6', weights_initializer=initializer)
         gen6 = tf.concat([gen6, e3], 3)
 
         # 64
-        gen7 = slim.conv2d_transpose(tf.nn.relu(gen6), n, [4, 4], 2, normalizer_fn=slim.batch_norm ,
+        gen7 = slim.conv2d_transpose(tf.nn.relu(gen6), n, [4, 4], 2, normalizer_fn=slim.batch_norm,
                                      activation_fn=None,
                                      scope='g_dconv7', weights_initializer=initializer)
         gen7 = tf.concat([gen7, e2], 3)
@@ -167,12 +178,11 @@ def generator(image, z,n = 64,is_train=True):
         # 128
         gen_out = slim.conv2d_transpose(tf.nn.relu(gen8), 3, [4, 4], 2, activation_fn=tf.nn.sigmoid,
                                         scope='g_out', weights_initializer=initializer)
-        gen_out_227=tf.image.resize_images(gen_out,[227,227])
-    return gen_out,gen_out_227
+        gen_out_227 = tf.image.resize_images(gen_out, [227, 227])
+    return gen_out, gen_out_227
 
 
-def styleloss_RNFLD(syn,style_gram,weight_gram,sess):
-
+def styleloss_RNFLD(syn, style_gram, weight_gram, sess):
     """
 
     :param syn: tf N,227,227,3
@@ -192,32 +202,30 @@ def styleloss_RNFLD(syn,style_gram,weight_gram,sess):
         model_file1 = tf.train.latest_checkpoint('./ckpt3/')
         saver_syn.restore(sess, model_file1)
 
-
-
     cnn_output_syn = tf.reshape(cnn_output_syn, shape=[-1, cnn_output_syn._shape_as_list()[1]
-      * cnn_output_syn._shape_as_list()[2],cnn_output_syn._shape_as_list()[3]])  #N,6*6,256
+                                                       * cnn_output_syn._shape_as_list()[2],
+                                                       cnn_output_syn._shape_as_list()[3]])  # N,6*6,256
 
-    syn_gram=tf.multiply(weight_gram,cnn_output_syn)
+    syn_gram = tf.multiply(weight_gram, cnn_output_syn)
     style_loss = tf.reduce_mean(tf.square(syn_gram - style_gram))
     return style_loss
 
-def get_tv_loss(img):
 
+def get_tv_loss(img):
     x = tf.reduce_mean(tf.abs(img[:, 1:, :, :] - img[:, :-1, :, :]))
     y = tf.reduce_mean(tf.abs(img[:, :, 1:, :] - img[:, :, :-1, :]))
-    return x+y
+    return x + y
 
 
 def main():
     sess = tf.InteractiveSession()
     global_step = tf.Variable(0, name='global_step', trainable=False)
 
-
     images = tf.placeholder(tf.float32, [BATCH_SIZE, img_H, img_H, 3], name='real_images')
     z = tf.placeholder(tf.float32, [BATCH_SIZE, Z_DIM], name='z')
-    vessel=tf.placeholder(tf.float32, [BATCH_SIZE, img_H,img_H,3], name='vessel')
-    style_gram= tf.placeholder(tf.float32, [BATCH_SIZE,None, None], name='style_gram')
-    weight_gram= tf.placeholder(tf.float32, [BATCH_SIZE,None, None], name='weight_gram')
+    vessel = tf.placeholder(tf.float32, [BATCH_SIZE, img_H, img_H, 3], name='vessel')
+    style_gram = tf.placeholder(tf.float32, [BATCH_SIZE, None, None], name='style_gram')
+    weight_gram = tf.placeholder(tf.float32, [BATCH_SIZE, None, None], name='weight_gram')
     X = tf.placeholder(tf.float32, [None, 227, 227, 3])  # 输入: MNIST数据图像为展开的向量
 
     G, G_227 = generator(vessel, z)
@@ -227,7 +235,6 @@ def main():
     D_, D_logits_ = discriminator(G_, reuse=True)
 
     sess.run(tf.global_variables_initializer())
-
 
     net = AlexNet(X, num_classes=2, is_training=False)
     with slim.arg_scope(AlexNet.alexnet_v2_arg_scope()):
@@ -239,10 +246,7 @@ def main():
     model_file1 = tf.train.latest_checkpoint('./ckpt3/')
     saver_syn.restore(sess, model_file1)
 
-
     "---------------------------------------------------------------"
-
-
 
     d_loss_real = tf.reduce_mean(
         tf.nn.sigmoid_cross_entropy_with_logits(logits=D_logits, labels=tf.ones_like(D)))
@@ -264,40 +268,36 @@ def main():
     d_optim = tf.train.GradientDescentOptimizer(LR).minimize(d_loss, var_list=d_vars, global_step=global_step)
     g_optim = tf.train.GradientDescentOptimizer(LR).minimize(g_loss, var_list=g_vars, global_step=global_step)
 
-
-
-
-    dataloader = DataLoader(batch_size=BATCH_SIZE,input_size=np.array([img_H, img_H]), sysstr=sysstr,path=dataset)
-    dataloader_test = DataLoader(batch_size=BATCH_SIZE,input_size=np.array([img_H, img_H]), sysstr=sysstr,path=dataset)
-    num_batches=dataloader.num_batches
+    dataloader = DataLoader(batch_size=BATCH_SIZE, input_size=np.array([img_H, img_H]), sysstr=sysstr, path=dataset)
+    dataloader_test = DataLoader(batch_size=BATCH_SIZE, input_size=np.array([img_H, img_H]), sysstr=sysstr,
+                                 path=dataset)
+    num_batches = dataloader.num_batches
     sample_z = np.random.uniform(0, 1, size=(BATCH_SIZE, Z_DIM))
-    _, batch_vessel_test,_ = dataloader_test.get_batch()
+    _, batch_vessel_test, _ = dataloader_test.get_batch()
     count = 0
     for epoch in range(2400):
         for idx in range(num_batches):
-            batch_images, batch_vessel ,img_name= dataloader.get_batch()
+            batch_images, batch_vessel, img_name = dataloader.get_batch()
             batch_z = np.random.uniform(0, 1, size=(BATCH_SIZE, Z_DIM))
             batch_images_227 = transform.resize(batch_images, [BATCH_SIZE, 227, 227])  # N,227,227,3
-
 
             cnn_out, norm_grads_1 = sess.run([k[7], norm_grads], feed_dict={X: batch_images_227})
 
             weights = np.mean(np.abs(norm_grads_1), axis=(1, 2))  # N,256
-            weight_gram_temp=np.expand_dims(weights,axis=1)#N,1,256
-            weight_gram_temp1 = np.repeat(weight_gram_temp, 6 * 6,axis=1)  #N,6*6,256
-            Style_gram=np.reshape(cnn_out,[-1,cnn_out.shape[1]*cnn_out.shape[2],cnn_out.shape[3]]) #N，6*6,256
-            style_gram1=np.multiply(weight_gram_temp1,Style_gram)
+            weight_gram_temp = np.expand_dims(weights, axis=1)  # N,1,256
+            weight_gram_temp1 = np.repeat(weight_gram_temp, 6 * 6, axis=1)  # N,6*6,256
+            Style_gram = np.reshape(cnn_out, [-1, cnn_out.shape[1] * cnn_out.shape[2], cnn_out.shape[3]])  # N，6*6,256
+            style_gram1 = np.multiply(weight_gram_temp1, Style_gram)
 
-            feed_dict_g={images: batch_images,z: batch_z,vessel:batch_vessel,weight_gram:weight_gram_temp1,style_gram:style_gram1}
-            _ = sess.run(d_optim, feed_dict={images: batch_images,z: batch_z,vessel:batch_vessel})
-            _  = sess.run(g_optim,feed_dict=feed_dict_g)
+            feed_dict_g = {images: batch_images, z: batch_z, vessel: batch_vessel, weight_gram: weight_gram_temp1,
+                           style_gram: style_gram1}
+            _ = sess.run(d_optim, feed_dict={images: batch_images, z: batch_z, vessel: batch_vessel})
+            _ = sess.run(g_optim, feed_dict=feed_dict_g)
             _ = sess.run(g_optim, feed_dict=feed_dict_g)
 
-            errD_fake = d_loss_fake.eval({z: batch_z,vessel:batch_vessel})
-            errD_real = d_loss_real.eval({images: batch_images,vessel:batch_vessel})
+            errD_fake = d_loss_fake.eval({z: batch_z, vessel: batch_vessel})
+            errD_real = d_loss_real.eval({images: batch_images, vessel: batch_vessel})
             errG = g_loss.eval(feed_dict_g)
-
-           
 
             count = count + 1
 
