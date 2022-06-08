@@ -14,7 +14,7 @@
 
 ## 2. Dataset
 
-1. The training and test fundus images are from the [[LAG-database]](https://github.com/smilell/AG-CNN, "Official SIGF"). 
+1. The training and test fundus images are from the [[LAG-database]](https://github.com/smilell/AG-CNN "Official SIGF"). 
 
 2. The vessel images corresponding to the fundus images can be generated using the method in the paper [[Vessel_segment]](file:///D:/download/2018-xianchneng-retina_blood_vessel.pdf). A recent re-implementation of the method can be seen in [[retina-segmentation-unet]](https://github.com/arthuraaL/retina-segmentation-unet)
 
